@@ -1,0 +1,68 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/5/Memory.hdl
+/**
+ * The complete address space of the Hack computer's memory,
+ * including RAM and memory-mapped I/O. 
+ * The chip facilitates read and write operations, as follows:
+ *     Read:  out(t) = Memory[address(t)](t)
+ *     Write: if load(t-1) then Memory[address(t-1)](t) = in(t-1)
+ * In words: the chip always outputs the value stored at the memory 
+ * location specified by address. If load=1, the in value is loaded 
+ * into the memory location specified by address. This value becomes 
+ * available through the out output from the next time step onward.
+ * Address space rules:
+ * Only the upper 16K+8K+1 words of the Memory chip are used. 
+ * Access to address>0x6000 is invalid and reads 0. Access to any address
+ * in the range 0x4000-0x5FFF results in accessing the screen memory 
+ * map. Access to address 0x6000 results in accessing the keyboard 
+ * memory map. The behavior in these addresses is described in the Screen
+ * and Keyboard chip specifications given in the lectures and the book.
+ */
+CHIP Memory {
+    IN in[16], load, address[15];
+    OUT out[16];
+
+    PARTS:    
+
+    DMux(in=true , sel=address[14] , a=addRam , b=other );
+    DMux(in=other , sel=address[13] , a=screen , b=other1 );
+
+    ALU(x[0..12]=address[0..12], x[13..15]=false , y=true , zx=false , nx=false , zy=false , ny=false , f=false , no=false , out=none1 , zr=iskbd , ng=none );
+
+    // iskbd = 0 or 1
+    DMux(in=true , sel=iskbd , a=kbd , b=other2 );
+
+    //DMux(in=true , sel=addRam , a=o1 , b=loadRam );
+    //DMux(in=o1 , sel=screen , a=o2 , b=loadScreen );
+
+
+
+
+    And(a=addRam , b=load , out=loadRam );
+    And(a=screen, b=load, out=loadScreen);
+
+    RAM16K(in=in , load=loadRam , address=address[0..13] , out=RamOutput );
+    Screen(in=in , load=loadScreen , address=address[0..12] , out=screenOutput );
+    Keyboard(out=keyboardOutput );
+
+    Not(in=addRam,    out=notRam);
+    Not(in=screen, out=notScreen);
+    Not(in=kbd,    out=notKbd);
+
+    // sel[1] = 1 when neither ram nor screen is active
+    And(a=notRam, b=notScreen, out=sel1);
+
+    // sel[0] = 1 when ram is off AND (screen is on OR kbd is off)
+    Or (a=screen,  b=notKbd,   out=screenOrNotKbd);
+    And(a=notRam,  b=screenOrNotKbd, out=sel0);
+
+    Mux4Way16(a=RamOutput , b=screenOutput , c=keyboardOutput , d=false , sel[1]=sel1, sel[0]=sel0 , out=out );
+
+    //Mux4Way16(a=addRam , b=screen , c=kbd , d=other2 , sel= , out= );
+
+
+
+	//// Replace this comment with your code.
+}

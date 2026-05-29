@@ -1,0 +1,80 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/3/a/RAM8.hdl
+/**
+ * Memory of eight 16-bit registers.
+ * If load is asserted, the value of the register selected by
+ * address is set to in; Otherwise, the value does not change.
+ * The value of the selected register is emitted by out.
+ */
+CHIP RAM8 {
+    IN in[16], load, address[3];
+    OUT out[16];
+
+    PARTS:
+    //Mux(a=in , b= , sel=load , out= );
+    And(a=address[1] , b=address[2] , out=fsbits );
+    And(a=fsbits , b=address[0] , out=allones );
+    And(a=load, b=allones, out=loadones);
+
+    // address 0, not ( Or(all bits) ) 000
+    Or(a=address[1] , b=address[2] , out=o1 ); // first two bitsare =  00
+    Or(a=o1 , b=address[0] , out=o2 );
+
+    Not(in=o2 , out=loadR0 );
+    // address 1, and ( not Or( first two bits ) , last bit ) 001
+    Not(in=o1 , out=o3 );
+    And(a=o3 , b=address[0] , out=loadR1 ); 
+    // address 2, and ( not Or( first and last ) , middle bit ) 010
+    Or(a=address[2] , b=address[0] , out=o4 );
+    Not(in=o4 , out=o5 );
+    And(a=o5 , b=address[1] , out=loadR2 );
+    // address 3, and ( last two bits , not ( first bit ) ) 011
+    And(a=address[0] , b=address[1] , out=o6 );
+    Not(in=address[2] , out=o7 );
+    And(a=o6, b=o7, out=loadR3);
+    // address 4, Not ( address 3 ) 100
+    Or(a=address[0] , b=address[1] , out=i1 );
+    Not(in=i1 , out=i2 );
+    And(a=i2 , b=address[2] , out=loadR4 );
+    // address 5, Not ( address 2 ) 101
+    And(a=address[2] , b=address[0] , out=i3 );
+    Not(in=address[1] , out=i4 );
+    And(a=i3 , b=i4 , out=loadR5 );
+    // address 6, Not ( address 1 ) 110
+    And(a=address[2], b=address[1] , out=i5 );
+    Not(in=address[0] , out=i6 );
+    And(a=i5 , b=i6 , out=loadR6 );
+    // address 7, Not ( address 0 ) 111
+    And(a=address[0] , b=address[1] , out=o8 );
+    And(a=o8 , b=address[2] , out=loadR7 );
+
+    And(a=loadR0 , b=load , out=loadR00 );
+    And(a=loadR1 , b=load , out=loadR11 );
+    And(a=loadR2 , b=load , out=loadR22 );
+    And(a=loadR3 , b=load , out=loadR33 );
+    And(a=loadR4 , b=load , out=loadR44 );
+    And(a=loadR5 , b=load , out=loadR55 );
+    And(a=loadR6 , b=load , out=loadR66 );
+    And(a=loadR7 , b=load , out=loadR77 );
+
+
+    Register(in=in , load=loadR00 , out=out0 );
+
+    Register(in=in , load=loadR11 , out=out1 );
+    Register(in=in , load=loadR22 , out=out2 );
+
+
+    Register(in=in , load=loadR33 , out=out3 );
+    Register(in=in , load=loadR44 , out=out4 );
+
+    Register(in=in , load=loadR55 , out=out5 );
+    Register(in=in , load=loadR66 , out=out6 );
+
+    Register(in=in , load=loadR77 , out=out7 );
+
+    Mux8Way16(a=out0, b=out1 , c=out2 , d=out3 , e=out4 , f=out5 , g=out6 , h=out7 , sel=address , out=out );
+
+    //// Replace this comment with your code.
+}
